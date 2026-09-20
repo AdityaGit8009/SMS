@@ -1,0 +1,7 @@
+@extends('layouts.panel')
+@section('title','My Profile') @section('page-title','My Profile') @section('page-subtitle','Manage your account details')
+@section('content')
+<div class="row justify-content-center"><div class="col-xl-8"><div class="sms-panel"><div class="sms-section-title"><div class="sms-title-icon"><i class="bi bi-person-circle"></i></div><div><h4>Profile Information</h4><p>Update your name, email, phone and profile photo.</p></div></div>
+<form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">@csrf @method('PUT')
+<div class="row g-3"><div class="col-md-6"><label class="sms-form-label">Name</label><input class="form-control sms-plain-control" name="name" value="{{ old('name',auth()->user()->name) }}" required></div><div class="col-md-6"><label class="sms-form-label">Email</label><input type="email" class="form-control sms-plain-control" name="email" value="{{ old('email',auth()->user()->email) }}" required></div><div class="col-md-6"><label class="sms-form-label">Phone</label><input class="form-control sms-plain-control" name="phone" value="{{ old('phone',auth()->user()->phone) }}"></div><div class="col-md-6"><label class="sms-form-label">Profile Photo</label><input type="file" class="form-control sms-plain-control" name="profile_photo" accept="image/*"></div></div><button class="btn sms-primary-btn sms-auto-width mt-4">Save Profile</button></form></div></div></div>
+@endsection

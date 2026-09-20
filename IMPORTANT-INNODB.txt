@@ -1,0 +1,31 @@
+IMPORTANT FOR YOUR WAMP SETUP
+=============================
+
+Your MySQL default_storage_engine was MyISAM. Before running this SMS project, use InnoDB.
+
+1) Open C:\wamp64\...\my.ini and under [mysqld] set:
+
+default-storage-engine=InnoDB
+
+2) Restart WAMP services.
+
+3) In phpMyAdmin run:
+
+SHOW VARIABLES LIKE 'default_storage_engine';
+
+Expected Value: InnoDB
+
+4) In Laravel config/database.php, inside the mysql connection, change:
+
+'engine' => null,
+
+to:
+
+'engine' => 'InnoDB',
+
+5) Then run:
+
+php artisan optimize:clear
+php artisan migrate:fresh --seed
+php artisan storage:link
+php artisan serve

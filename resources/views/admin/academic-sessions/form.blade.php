@@ -1,0 +1,7 @@
+@extends('layouts.panel')
+@section('title',$item->exists?'Edit Session':'Add Session') @section('page-title',$item->exists?'Edit Academic Session':'Add Academic Session')
+@section('content')
+<div class="sms-form-card"><form method="POST" action="{{ $item->exists?route('admin.academic-sessions.update',$item):route('admin.academic-sessions.store') }}">@csrf @if($item->exists)@method('PUT')@endif
+<div class="row g-3"><div class="col-md-12"><label class="sms-form-label">Session Name</label><input class="form-control sms-plain-control" name="name" value="{{ old('name',$item->name) }}" placeholder="2026-27" required></div><div class="col-md-6"><label class="sms-form-label">Start Date</label><input type="date" class="form-control sms-plain-control" name="start_date" value="{{ old('start_date',$item->start_date?->format('Y-m-d')) }}" required></div><div class="col-md-6"><label class="sms-form-label">End Date</label><input type="date" class="form-control sms-plain-control" name="end_date" value="{{ old('end_date',$item->end_date?->format('Y-m-d')) }}" required></div><div class="col-12"><label class="form-check"><input type="checkbox" class="form-check-input" name="is_current" value="1" @checked(old('is_current',$item->is_current))> <span class="form-check-label">Set as current academic session</span></label></div></div>
+<div class="sms-form-actions"><a class="btn btn-light" href="{{ route('admin.academic-sessions.index') }}">Cancel</a><button class="btn sms-primary-btn sms-auto-width">Save Session</button></div></form></div>
+@endsection

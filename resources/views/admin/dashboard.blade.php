@@ -1,0 +1,14 @@
+@extends('layouts.panel')
+@section('title','Admin Dashboard') @section('page-title','Dashboard') @section('page-subtitle','Administration overview')
+@section('content')
+<div class="sms-dashboard-heading"><div><h2>Dashboard Overview</h2><p>Academic and operational summary at a glance.</p></div><div class="sms-current-date"><i class="bi bi-calendar3"></i>{{ now()->format('d M Y') }}</div></div>
+<div class="row g-4">
+@foreach([
+ ['Total Students',$stats['students'],'bi-mortarboard','indigo'],['Total Teachers',$stats['teachers'],'bi-person-workspace','cyan'],['Total Courses',$stats['courses'],'bi-journal-bookmark','green'],['Total Subjects',$stats['subjects'],'bi-book','orange'],['Pending Fees','₹'.number_format($stats['pending_fees'],2),'bi-wallet2','danger'],['Present Today',$stats['attendance_today'],'bi-calendar-check','purple']
+] as $s)
+<div class="col-xl-2 col-md-4 col-sm-6"><div class="sms-stat-card"><div class="sms-stat-icon sms-stat-{{ $s[3] }}"><i class="bi {{ $s[2] }}"></i></div><div><span>{{ $s[0] }}</span><h3>{{ $s[1] }}</h3></div></div></div>
+@endforeach
+</div>
+<div class="row g-4 mt-1"><div class="col-xl-7"><div class="sms-panel"><div class="sms-panel-header"><div><h5>Recent Admissions</h5><span>Latest student registrations</span></div><a class="sms-outline-button" href="{{ route('admin.students.index') }}">View All</a></div><div class="table-responsive"><table class="table sms-table"><thead><tr><th>Student</th><th>Roll No</th><th>Course</th><th>Semester</th></tr></thead><tbody>@forelse($students as $student)<tr><td><div class="sms-table-user"><span>{{ strtoupper(substr($student->user->name,0,1)) }}</span><div><strong>{{ $student->user->name }}</strong><small>{{ $student->user->email }}</small></div></div></td><td>{{ $student->roll_no }}</td><td>{{ $student->course->name }}</td><td>{{ $student->semester->name }}</td></tr>@empty<tr><td colspan="4" class="text-center py-4">No students yet.</td></tr>@endforelse</tbody></table></div></div></div>
+<div class="col-xl-5"><div class="sms-panel mb-4"><div class="sms-panel-header"><div><h5>Upcoming Exams</h5><span>Next scheduled papers</span></div></div>@forelse($upcomingExams as $row)<div class="sms-list-item"><div class="sms-list-icon"><i class="bi bi-file-earmark-text"></i></div><div><strong>{{ $row->subject->name }}</strong><small>{{ $row->exam->name }} · {{ $row->exam_date->format('d M Y') }}</small></div></div>@empty<p class="sms-empty">No upcoming exams.</p>@endforelse</div><div class="sms-panel"><div class="sms-panel-header"><div><h5>Latest Notices</h5><span>Published announcements</span></div></div>@forelse($notices as $notice)<div class="sms-list-item"><div class="sms-list-icon"><i class="bi bi-megaphone"></i></div><div><strong>{{ $notice->title }}</strong><small>{{ $notice->publish_date->format('d M Y') }} · {{ ucfirst($notice->type) }}</small></div></div>@empty<p class="sms-empty">No notices.</p>@endforelse</div></div></div>
+@endsection
