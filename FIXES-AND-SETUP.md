@@ -56,9 +56,7 @@ This project is configured for Laravel 13, PHP 8.4, MySQL, Blade, Bootstrap, Jav
 
 ## Demo accounts
 
-- Admin: `admin@sms.com` / `Admin@123`
-- Teacher: `teacher@sms.com` / `Teacher@123`
-- Student: `student@sms.com` / `Student@123`
+The demo seeder runs in `local` and `testing` environments. Before the first seed, set `SMS_DEMO_PASSWORD` to a password of your choice in the local `.env`. Sign in as `admin@example.test`, `teacher@example.test`, or `student@example.test`. Without that setting, the seeder generates a separate random password for each account. You can use the local password-reset flow to choose one. Reseeding preserves existing passwords.
 
 ## Password reset in local development
 

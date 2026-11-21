@@ -4,57 +4,23 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
 
-            [
-                'email' => 'adityapratap7391@gmail.com',
-            ],
-
-            [
-                'name' => 'SMS Admin',
-                'password' => Hash::make('Admin@123'),
-                'role' => 'admin',
+        foreach (['admin' => 'SMS Administrator', 'teacher' => 'Demo Teacher', 'student' => 'Demo Student'] as $role => $name) {
+            User::firstOrCreate(['email' => $role.'@example.test'], [
+                'name' => $name,
+                'password' => config('sms.demo_password') ?: Str::password(32),
+                'role' => $role,
                 'status' => true,
-            ]
-
-        );
-
-
-        User::updateOrCreate(
-
-            [
-                'email' => 'teacher@sms.com',
-            ],
-
-            [
-                'name' => 'Demo Teacher',
-                'password' => Hash::make('Teacher@123'),
-                'role' => 'teacher',
-                'status' => true,
-            ]
-
-        );
-
-
-        User::updateOrCreate(
-
-            [
-                'email' => 'student@sms.com',
-            ],
-
-            [
-                'name' => 'Demo Student',
-                'password' => Hash::make('Student@123'),
-                'role' => 'student',
-                'status' => true,
-            ]
-
-        );
+            ]);
+        }
     }
 }

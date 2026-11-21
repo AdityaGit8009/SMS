@@ -218,15 +218,7 @@ For a compiled frontend build, use `npm run build` instead of the Vite developme
 
 ## 👤 Demo Accounts
 
-The repository's existing README documents the following **local development accounts** after seeding:
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Admin | `admin@sms.com` | `Admin@123` |
-| Teacher | `teacher@sms.com` | `Teacher@123` |
-| Student | `student@sms.com` | `Student@123` |
-
-**Important:** These are publicly documented test credentials. **Remove or change them before any public deployment**, and ensure production seeders do not recreate them.
+The demo seeder runs in `local` and `testing` environments. Before the first seed, set `SMS_DEMO_PASSWORD` to a password of your choice in the local `.env`. Sign in as `admin@example.test`, `teacher@example.test`, or `student@example.test`. Without that setting, the seeder generates a separate random password for each account. You can use the local password-reset flow to choose one. Reseeding preserves existing passwords.
 
 ## 🔑 Password Reset in Development
 
