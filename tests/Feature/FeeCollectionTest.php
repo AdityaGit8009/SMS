@@ -55,3 +55,11 @@ it('returns a mismatched fee structure to the collection form', function () {
 
     $this->assertDatabaseEmpty('fee_payments');
 });
+
+it('carries the other fee table page when navigating either list', function () {
+    $user = User::factory()->create(['role' => 'admin', 'status' => true]);
+
+    $this->actingAs($user)->get(route('admin.fees.index', ['structures_page' => 2, 'payments_page' => 3]))
+        ->assertViewHas('structures', fn ($rows) => str_contains($rows->url(1), 'payments_page=3'))
+        ->assertViewHas('payments', fn ($rows) => str_contains($rows->url(1), 'structures_page=2'));
+});

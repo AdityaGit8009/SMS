@@ -17,11 +17,13 @@ class FeeController extends Controller
     public function index(Request $request)
     {
         $structures = FeeStructure::with(['course', 'academicSession'])
-            ->latest()->paginate(12, ['*'], 'structures_page');
+            ->latest()->orderByDesc('id')->paginate(12, ['*'], 'structures_page')
+            ->appends($request->only('payments_page'));
         $paymentStructures = FeeStructure::with(['course', 'academicSession'])
             ->orderBy('course_id')->orderBy('academic_session_id')->orderBy('name')->get();
         $payments = FeePayment::with(['student.user', 'feeStructure'])
-            ->latest('payment_date')->paginate(15, ['*'], 'payments_page');
+            ->latest('payment_date')->orderByDesc('id')->paginate(15, ['*'], 'payments_page')
+            ->appends($request->only('structures_page'));
         $courses = Course::orderBy('name')->get();
         $sessions = AcademicSession::latest('start_date')->get();
         $students = Student::with('user')->where('status', true)->orderBy('roll_no')->get();
