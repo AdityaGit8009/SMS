@@ -6,6 +6,8 @@ use App\Models\Attendance;
 use App\Models\Student;
 use App\Models\Subject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AttendanceController extends Controller
 {
@@ -64,28 +66,25 @@ class AttendanceController extends Controller
             abort_unless($subject->teacher_id === $request->user()->teacher?->id, 403);
         }
 
-        foreach ($data['attendance'] as $studentId => $status) {
-            $student = Student::whereKey($studentId)
-                ->where('course_id', $subject->course_id)
-                ->where('semester_id', $subject->semester_id)
-                ->first();
-
-            if (! $student) {
-                continue;
-            }
-
-            Attendance::updateOrCreate(
-                [
-                    'student_id' => $student->id,
-                    'subject_id' => $subject->id,
-                    'date' => $data['date'],
-                ],
-                [
-                    'status' => $status,
-                    'marked_by' => $request->user()->id,
-                ]
-            );
+        $studentIds = array_keys($data['attendance']);
+        $eligible = Student::whereKey($studentIds)
+            ->where('course_id', $subject->course_id)
+            ->where('semester_id', $subject->semester_id)
+            ->where('status', true)
+            ->count();
+        if ($eligible !== count($studentIds)) {
+            throw ValidationException::withMessages(['attendance' => 'The class roster has changed. Reload the students before saving attendance.']);
         }
+
+        $date = $request->date('date')->toDateString();
+        DB::transaction(function () use ($data, $subject, $date, $request) {
+            foreach ($data['attendance'] as $studentId => $status) {
+                Attendance::whereDate('date', $date)->updateOrCreate(
+                    ['student_id' => $studentId, 'subject_id' => $subject->id],
+                    ['date' => $date, 'status' => $status, 'marked_by' => $request->user()->id]
+                );
+            }
+        });
 
         return back()->with('success', 'Attendance saved successfully.');
     }
@@ -107,6 +106,7 @@ class AttendanceController extends Controller
         $subjectSummary = $all->groupBy('subject_id')->map(function ($rows) {
             $total = $rows->count();
             $present = $rows->where('status', 'present')->count();
+
             return [
                 'subject' => $rows->first()->subject,
                 'total' => $total,
