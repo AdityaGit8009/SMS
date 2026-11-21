@@ -31,3 +31,19 @@ it('lists seeded classes in week and time order for the administrator', function
     $this->actingAs(User::where('role', 'admin')->sole())->get(route('admin.timetable.index'))
         ->assertViewHas('items', fn ($items) => $items->map(fn ($item) => substr($item->start_time, 0, 5))->all() === ['11:00', '14:00', '09:00']);
 });
+
+it('shows earlier classes first on a personal timetable', function (string $role) {
+    $this->seed(SmsDemoSeeder::class);
+    $subject = Subject::where('code', 'CS101')->firstOrFail();
+    Timetable::create(smsTimetableSlot($subject, ['start_time' => '13:00', 'end_time' => '14:00', 'room' => 'Afternoon lab']));
+    Timetable::create(smsTimetableSlot($subject, ['room' => 'Morning lab']));
+
+    $this->actingAs(User::where('role', $role)->sole())->get(route($role.'.timetable'))
+        ->assertSeeInOrder(['Morning lab', 'Afternoon lab']);
+})->with(['teacher', 'student']);
+
+it('handles an account without a linked timetable profile', function (string $role) {
+    $user = User::factory()->create(['role' => $role, 'status' => true]);
+
+    $this->actingAs($user)->get(route($role.'.timetable'))->assertNotFound();
+})->with(['teacher', 'student']);
