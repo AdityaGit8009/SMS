@@ -17,8 +17,9 @@ class TimetableController extends Controller
     public function index()
     {
         $items = Timetable::with(['course', 'semester', 'section', 'subject', 'teacher.user'])
-            ->orderByRaw("FIELD(day_of_week,'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')")
+            ->orderByRaw("case day_of_week when 'Monday' then 1 when 'Tuesday' then 2 when 'Wednesday' then 3 when 'Thursday' then 4 when 'Friday' then 5 when 'Saturday' then 6 else 7 end")
             ->orderBy('start_time')
+            ->orderBy('id')
             ->paginate(30);
 
         return view('admin.timetables.index', [
@@ -34,18 +35,21 @@ class TimetableController extends Controller
     public function store(Request $request)
     {
         Timetable::create($this->validated($request));
+
         return back()->with('success', 'Timetable entry created.');
     }
 
     public function update(Request $request, Timetable $timetable)
     {
         $timetable->update($this->validated($request, $timetable));
+
         return back()->with('success', 'Timetable entry updated.');
     }
 
     public function destroy(Timetable $timetable)
     {
         $timetable->delete();
+
         return back()->with('success', 'Timetable entry deleted.');
     }
 
