@@ -22,7 +22,9 @@ class DashboardController extends Controller
         $due = FeeStructure::where('course_id', $student->course_id)->where('academic_session_id', $student->academic_session_id)->sum('amount');
         $paid = $student->feePayments()->sum('amount');
         $pending = max($due - $paid, 0);
-        $upcomingExams = ExamSchedule::with(['exam', 'subject'])->whereHas('exam', fn ($q) => $q->where('course_id', $student->course_id)->where('semester_id', $student->semester_id))->whereDate('exam_date', '>=', today())->orderBy('exam_date')->take(5)->get();
+        $upcomingExams = ExamSchedule::with(['exam', 'subject'])->whereHas('exam', fn ($q) => $q->where('course_id', $student->course_id)->where('semester_id', $student->semester_id)
+            ->where('academic_session_id', $student->academic_session_id)
+            ->where('status', 'published'))->whereDate('exam_date', '>=', today())->orderBy('exam_date')->take(5)->get();
         $assignments = Assignment::with('subject')->whereHas('subject', fn ($q) => $q->where('course_id', $student->course_id)->where('semester_id', $student->semester_id))->latest()->take(5)->get();
         $notices = Notice::published()->where(function ($q) {
             $q->whereNull('target_role')->orWhere('target_role', 'student');
@@ -33,6 +35,6 @@ class DashboardController extends Controller
             $q->whereNull('section_id')->orWhere('section_id', $student->section_id);
         })->where('day_of_week', now()->format('l'))->orderBy('start_time')->get();
 
-        return view('student.dashboard', compact('student','attendancePercentage','pending','upcomingExams','assignments','notices','timetable'));
+        return view('student.dashboard', compact('student', 'attendancePercentage', 'pending', 'upcomingExams', 'assignments', 'notices', 'timetable'));
     }
 }
