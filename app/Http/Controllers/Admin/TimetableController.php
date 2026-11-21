@@ -100,13 +100,8 @@ class TimetableController extends Controller
         $classConflict = clone $baseConflict;
         $classConflict->where('course_id', $data['course_id'])
             ->where('semester_id', $data['semester_id'])
-            ->where(function ($q) use ($data) {
-                if (! empty($data['section_id'])) {
-                    $q->whereNull('section_id')->orWhere('section_id', $data['section_id']);
-                } else {
-                    $q->whereNull('section_id');
-                }
-            });
+            ->when($data['section_id'] ?? null, fn ($query, $sectionId) => $query
+                ->where(fn ($sections) => $sections->whereNull('section_id')->orWhere('section_id', $sectionId)));
 
         if ($classConflict->exists()) {
             throw ValidationException::withMessages(['start_time' => 'This class already has another timetable entry in the selected time slot.']);
