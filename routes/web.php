@@ -34,7 +34,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    if (! Auth::check()) return redirect()->route('login');
+    if (! Auth::check()) {
+        return redirect()->route('login');
+    }
+
     return match (Auth::user()->role) {
         'admin' => redirect()->route('admin.dashboard'),
         'teacher' => redirect()->route('teacher.dashboard'),
@@ -52,7 +55,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [PasswordController::class, 'resetPassword'])->name('password.update');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'role:admin,teacher,student'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
