@@ -9,6 +9,8 @@ use App\Models\FeePayment;
 use App\Models\FeeStructure;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class FeeController extends Controller
 {
@@ -34,7 +36,7 @@ class FeeController extends Controller
             'academic_session_id' => ['required', 'exists:academic_sessions,id'],
             'name' => ['required', 'max:191'],
             'type' => ['required', 'max:50'],
-            'amount' => ['required', 'numeric', 'min:0'],
+            'amount' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999.99'],
         ]);
 
         $exists = FeeStructure::where('course_id', $data['course_id'])
@@ -67,36 +69,32 @@ class FeeController extends Controller
         $data = $request->validate([
             'student_id' => ['required', 'exists:students,id'],
             'fee_structure_id' => ['required', 'exists:fee_structures,id'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'decimal:0,2', 'min:0.01', 'max:9999999999.99'],
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', 'in:cash,upi,card,bank_transfer,cheque'],
             'transaction_id' => ['nullable', 'max:191'],
             'remarks' => ['nullable', 'string'],
         ]);
 
-        $student = Student::findOrFail($data['student_id']);
-        $structure = FeeStructure::findOrFail($data['fee_structure_id']);
+        $payment = DB::transaction(function () use ($data, $request) {
+            $student = Student::whereKey($data['student_id'])->lockForUpdate()->firstOrFail();
+            $structure = FeeStructure::findOrFail($data['fee_structure_id']);
+            if ($structure->course_id !== $student->course_id || $structure->academic_session_id !== $student->academic_session_id) {
+                throw ValidationException::withMessages(['fee_structure_id' => 'Select a fee structure from the student’s course and session.']);
+            }
 
-        abort_unless(
-            $structure->course_id === $student->course_id
-                && $structure->academic_session_id === $student->academic_session_id,
-            422,
-            'Selected fee structure does not belong to this student.'
-        );
+            $paid = FeePayment::where('student_id', $student->id)
+                ->where('fee_structure_id', $structure->id)
+                ->sum('amount');
+            $remainingCents = max((int) round($structure->amount * 100) - (int) round($paid * 100), 0);
+            if ((int) round($data['amount'] * 100) > $remainingCents) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Payment exceeds the remaining amount of ₹'.number_format($remainingCents / 100, 2).'.',
+                ]);
+            }
 
-        $alreadyPaid = FeePayment::where('student_id', $student->id)
-            ->where('fee_structure_id', $structure->id)
-            ->sum('amount');
-        $remaining = max((float) $structure->amount - (float) $alreadyPaid, 0);
-
-        if ((float) $data['amount'] > $remaining) {
-            return back()->withErrors([
-                'amount' => 'Payment exceeds the remaining amount of ₹'.number_format($remaining, 2).'.',
-            ])->withInput();
-        }
-
-        $data['received_by'] = $request->user()->id;
-        $payment = FeePayment::create($data);
+            return FeePayment::create($data + ['received_by' => $request->user()->id]);
+        }, 3);
 
         return redirect()->route('admin.fees.receipt', $payment)->with('success', 'Payment recorded.');
     }
