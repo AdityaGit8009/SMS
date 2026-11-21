@@ -11,28 +11,14 @@ use App\Models\FeeStructure;
 use App\Models\Mark;
 use App\Models\Student;
 use App\Models\Teacher;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
     public function index(Request $request)
     {
-        $students = Student::with(['user', 'course', 'semester', 'section', 'academicSession']);
-        if ($request->filled('q')) {
-            $students->where(function ($q) use ($request) {
-                $q->where('roll_no', 'like', '%'.$request->q.'%')
-                    ->orWhere('admission_no', 'like', '%'.$request->q.'%')
-                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', '%'.$request->q.'%'));
-            });
-        }
-        if ($request->filled('course_id')) {
-            $students->where('course_id', $request->course_id);
-        }
-        if ($request->filled('status')) {
-            $students->where('status', $request->status);
-        }
-
-        $studentRows = $students->orderBy('roll_no')->paginate(20, ['*'], 'students')->withQueryString();
+        $studentRows = $this->studentReportQuery($request)->orderBy('roll_no')->paginate(20, ['*'], 'students')->withQueryString();
         $teacherRows = Teacher::with(['user', 'department'])->orderBy('employee_id')->paginate(15, ['*'], 'teachers')->withQueryString();
         $attendanceRows = Attendance::with(['student.user', 'student.course', 'subject'])->latest('date')->paginate(25, ['*'], 'attendance')->withQueryString();
         $examRows = Exam::with(['course', 'semester', 'academicSession'])->latest('start_date')->paginate(15, ['*'], 'exams')->withQueryString();
@@ -64,9 +50,29 @@ class ReportController extends Controller
         ));
     }
 
-    public function studentsCsv()
+    private function studentReportQuery(Request $request): Builder
     {
-        $rows = Student::with(['user', 'course', 'semester', 'section', 'academicSession'])->orderBy('roll_no')->get();
+        $students = Student::with(['user', 'course', 'semester', 'section', 'academicSession']);
+        if ($request->filled('q')) {
+            $students->where(function ($q) use ($request) {
+                $q->where('roll_no', 'like', '%'.$request->q.'%')
+                    ->orWhere('admission_no', 'like', '%'.$request->q.'%')
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', '%'.$request->q.'%'));
+            });
+        }
+        if ($request->filled('course_id')) {
+            $students->where('course_id', $request->course_id);
+        }
+        if ($request->filled('status')) {
+            $students->where('status', $request->status);
+        }
+
+        return $students;
+    }
+
+    public function studentsCsv(Request $request)
+    {
+        $rows = $this->studentReportQuery($request)->orderBy('roll_no')->get();
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
