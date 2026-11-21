@@ -16,13 +16,15 @@ class FeeController extends Controller
     {
         $structures = FeeStructure::with(['course', 'academicSession'])
             ->latest()->paginate(12, ['*'], 'structures_page');
+        $paymentStructures = FeeStructure::with(['course', 'academicSession'])
+            ->orderBy('course_id')->orderBy('academic_session_id')->orderBy('name')->get();
         $payments = FeePayment::with(['student.user', 'feeStructure'])
             ->latest('payment_date')->paginate(15, ['*'], 'payments_page');
         $courses = Course::orderBy('name')->get();
         $sessions = AcademicSession::latest('start_date')->get();
         $students = Student::with('user')->where('status', true)->orderBy('roll_no')->get();
 
-        return view('admin.fees.index', compact('structures', 'payments', 'courses', 'sessions', 'students'));
+        return view('admin.fees.index', compact('structures', 'paymentStructures', 'payments', 'courses', 'sessions', 'students'));
     }
 
     public function storeStructure(Request $request)
@@ -45,6 +47,7 @@ class FeeController extends Controller
         }
 
         FeeStructure::create($data);
+
         return back()->with('success', 'Fee structure created.');
     }
 
@@ -55,6 +58,7 @@ class FeeController extends Controller
         }
 
         $feeStructure->delete();
+
         return back()->with('success', 'Fee structure deleted.');
     }
 
@@ -100,6 +104,7 @@ class FeeController extends Controller
     public function receipt(FeePayment $payment)
     {
         $payment->load(['student.user', 'student.course', 'student.academicSession', 'feeStructure']);
+
         return view('admin.fees.receipt', compact('payment'));
     }
 
