@@ -65,3 +65,15 @@ it('rejects a class-wide timetable overlap in either insertion order', function 
 
     $this->assertDatabaseCount('timetables', 1);
 })->with([true, false]);
+
+it('allows a back-to-back class after a stored second-precision end time', function () {
+    $this->seed(SmsDemoSeeder::class);
+    $subject = Subject::where('code', 'CS101')->firstOrFail();
+    Timetable::create(smsTimetableSlot($subject, ['start_time' => '09:00:00', 'end_time' => '10:00:00']));
+
+    $this->actingAs(User::where('role', 'admin')->sole())->post(route('admin.timetable.store'),
+        smsTimetableSlot($subject, ['start_time' => '10:00', 'end_time' => '11:00'])
+    )->assertSessionHasNoErrors();
+
+    $this->assertDatabaseCount('timetables', 2);
+});

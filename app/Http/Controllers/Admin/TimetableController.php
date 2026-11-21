@@ -86,8 +86,8 @@ class TimetableController extends Controller
 
         $baseConflict = Timetable::query()
             ->where('day_of_week', $data['day_of_week'])
-            ->where('start_time', '<', $data['end_time'])
-            ->where('end_time', '>', $data['start_time']);
+            ->whereTime('start_time', '<', $data['end_time'].':00')
+            ->whereTime('end_time', '>', $data['start_time'].':00');
 
         if ($current) {
             $baseConflict->whereKeyNot($current->id);
