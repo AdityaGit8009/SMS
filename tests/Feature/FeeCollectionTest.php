@@ -63,3 +63,18 @@ it('carries the other fee table page when navigating either list', function () {
         ->assertViewHas('structures', fn ($rows) => str_contains($rows->url(1), 'payments_page=3'))
         ->assertViewHas('payments', fn ($rows) => str_contains($rows->url(1), 'structures_page=2'));
 });
+
+it('totals outstanding balances per student and lists only unpaid balances', function () {
+    $this->seed(SmsDemoSeeder::class);
+    $student = Student::sole();
+    $overpaid = $student->replicate()->fill(['user_id' => User::factory()->create()->id, 'roll_no' => 'R2', 'admission_no' => 'A2']);
+    $overpaid->save();
+    foreach ([[$student, 5000], [$overpaid, 80000]] as [$payer, $amount]) {
+        FeePayment::create(['student_id' => $payer->id, 'payment_date' => '2026-11-01', 'payment_method' => 'cash', 'amount' => $amount]);
+    }
+
+    $this->actingAs(User::where('role', 'admin')->sole())->get(route('admin.dashboard'))
+        ->assertViewHas('stats', fn ($stats) => (float) $stats['pending_fees'] === 70000.0);
+    $this->get(route('admin.reports.index'))
+        ->assertViewHas('pendingRows', fn ($rows) => $rows->modelKeys() === [$student->id] && (float) $rows->first()->fee_pending_total === 70000.0);
+});

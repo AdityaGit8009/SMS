@@ -7,7 +7,6 @@ use App\Models\Attendance;
 use App\Models\Course;
 use App\Models\Exam;
 use App\Models\FeePayment;
-use App\Models\FeeStructure;
 use App\Models\Mark;
 use App\Models\Student;
 use App\Models\Teacher;
@@ -24,16 +23,9 @@ class ReportController extends Controller
         $examRows = Exam::with(['course', 'semester', 'academicSession'])->latest('start_date')->paginate(15, ['*'], 'exams')->withQueryString();
         $resultRows = Mark::with(['student.user', 'examSchedule.exam', 'examSchedule.subject'])->latest()->paginate(25, ['*'], 'results')->withQueryString();
 
-        $pendingRows = Student::with(['user', 'course', 'academicSession', 'feePayments'])->get()->map(function ($student) {
-            $due = FeeStructure::where('course_id', $student->course_id)
-                ->where('academic_session_id', $student->academic_session_id)->sum('amount');
-            $paid = $student->feePayments->sum('amount');
-            $student->fee_due_total = (float) $due;
-            $student->fee_paid_total = (float) $paid;
-            $student->fee_pending_total = max((float) $due - (float) $paid, 0);
-
-            return $student;
-        })->filter(fn ($s) => $s->fee_pending_total > 0)->sortByDesc('fee_pending_total')->take(50);
+        $pendingRows = Student::withFeeBalances()->with(['user', 'course'])
+            ->whereColumn('fee_due_total', '>', 'fee_paid_total')
+            ->orderByDesc('fee_pending_total')->orderBy('id')->limit(50)->get();
 
         $summary = [
             'students' => Student::count(),
