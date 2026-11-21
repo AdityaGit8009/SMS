@@ -37,3 +37,20 @@ it('updates existing decimal scores without duplicating exam results', function 
     $this->assertDatabaseCount('marks', 1);
     $this->assertDatabaseHas('marks', ['student_id' => $student->id, 'total_marks' => 22.10, 'entered_by' => $admin->id]);
 });
+
+it('leaves unfinished marks empty and records an explicitly entered zero', function () {
+    $this->seed(SmsDemoSeeder::class);
+    $student = Student::sole();
+    $schedule = ExamSchedule::sole();
+    $this->actingAs(User::where('role', 'admin')->sole());
+
+    $this->get(route('admin.marks.index', ['schedule_id' => $schedule->id]))
+        ->assertSee('name="marks['.$student->id.'][theory]" value=""', false);
+    $this->post(route('admin.marks.store'), ['schedule_id' => $schedule->id, 'marks' => [$student->id => ['theory' => '', 'practical' => '']]])
+        ->assertSessionHasNoErrors();
+    $this->assertDatabaseEmpty('marks');
+
+    $this->post(route('admin.marks.store'), ['schedule_id' => $schedule->id, 'marks' => [$student->id => ['theory' => '0']]])
+        ->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('marks', ['student_id' => $student->id, 'total_marks' => 0]);
+});

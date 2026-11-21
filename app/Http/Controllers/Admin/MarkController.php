@@ -58,6 +58,10 @@ class MarkController extends Controller
                 throw ValidationException::withMessages(['marks' => 'The class roster has changed. Reload the students before saving marks.']);
             }
 
+            if (($row['theory'] ?? null) === null && ($row['practical'] ?? null) === null) {
+                continue;
+            }
+
             $theory = (float) ($row['theory'] ?? 0);
             $practical = (float) ($row['practical'] ?? 0);
             $total = round($theory + $practical, 2);
