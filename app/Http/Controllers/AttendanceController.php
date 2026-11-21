@@ -13,6 +13,7 @@ class AttendanceController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate(['subject_id' => ['nullable', 'integer'], 'date' => ['nullable', 'date_format:Y-m-d']]);
         $user = $request->user();
         $subjectQuery = Subject::with(['course', 'semester', 'teacher.user']);
 
@@ -27,7 +28,7 @@ class AttendanceController extends Controller
         $date = $request->input('date', now()->toDateString());
 
         if ($request->filled('subject_id')) {
-            $selectedSubject = Subject::findOrFail($request->subject_id);
+            $selectedSubject = Subject::with(['course', 'semester'])->findOrFail($request->subject_id);
 
             if ($user->role === 'teacher') {
                 abort_unless($selectedSubject->teacher_id === $user->teacher?->id, 403);

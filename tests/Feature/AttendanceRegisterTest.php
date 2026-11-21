@@ -35,3 +35,12 @@ it('returns a form error for attendance on a student who left the roster', funct
 
     $this->assertDatabaseEmpty('attendances');
 });
+
+it('returns invalid register filters to the attendance form', function () {
+    $user = User::factory()->create(['role' => 'admin', 'status' => true]);
+
+    $this->actingAs($user)->from(route('admin.attendance.index'))
+        ->get(route('admin.attendance.index', ['subject_id' => 'unknown', 'date' => 'not-a-date']))
+        ->assertRedirectToRoute('admin.attendance.index')
+        ->assertSessionHasErrors(['subject_id', 'date']);
+});
