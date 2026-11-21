@@ -18,7 +18,8 @@ class DashboardController extends Controller
         $timetable = Timetable::with('subject')->where('teacher_id', $teacher->id)->where('day_of_week', now()->format('l'))->orderBy('start_time')->get();
         $notices = Notice::published()->where(function ($q) {
             $q->whereNull('target_role')->orWhere('target_role', 'teacher');
-        })->latest('publish_date')->take(5)->get();
+        })->where(fn ($query) => $query->whereNull('course_id')->orWhereIn('course_id', $subjects->pluck('course_id')))
+            ->latest('publish_date')->take(5)->get();
 
         return view('teacher.dashboard', compact('teacher', 'subjects', 'assignments', 'timetable', 'notices'));
     }

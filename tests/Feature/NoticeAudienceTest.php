@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Course;
 use App\Models\Notice;
 use App\Models\User;
 use Database\Seeders\SmsDemoSeeder;
@@ -21,3 +22,19 @@ it('publishes active notices on their scheduled date across audience pages', fun
             return $titles->contains('Today notice') && ! $titles->contains('Future notice') && ! $titles->contains('Unpublished notice');
         });
 })->with([['student', 'student.notices'], ['student', 'student.dashboard'], ['teacher', 'teacher.dashboard']]);
+
+it('limits teacher notices to assigned courses and general announcements', function () {
+    $this->seed(SmsDemoSeeder::class);
+    $course = Course::sole();
+    $other = $course->replicate();
+    $other->code = 'OTHER';
+    $other->save();
+    foreach ([['Assigned announcement', $course->id], ['Other announcement', $other->id], ['General announcement', null]] as [$title, $courseId]) {
+        Notice::create(['course_id' => $courseId, 'title' => $title, 'content' => $title, 'publish_date' => today(), 'status' => true]);
+    }
+
+    $this->actingAs(User::where('role', 'teacher')->sole())->get(route('teacher.dashboard'))
+        ->assertViewHas('notices', fn ($notices) => $notices->pluck('title')->contains('Assigned announcement')
+            && $notices->pluck('title')->contains('General announcement')
+            && ! $notices->pluck('title')->contains('Other announcement'));
+});
