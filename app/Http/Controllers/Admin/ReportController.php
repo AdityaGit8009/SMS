@@ -72,7 +72,7 @@ class ReportController extends Controller
 
     public function studentsCsv(Request $request)
     {
-        $rows = $this->studentReportQuery($request)->orderBy('roll_no')->get();
+        $rows = $this->studentReportQuery($request)->orderBy('roll_no')->orderBy('id')->lazy(500);
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
@@ -86,7 +86,7 @@ class ReportController extends Controller
 
     public function feesCsv()
     {
-        $rows = FeePayment::with(['student.user', 'feeStructure'])->orderBy('payment_date')->get();
+        $rows = FeePayment::with(['student.user', 'feeStructure'])->orderBy('payment_date')->orderBy('id')->lazy(500);
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
@@ -100,7 +100,7 @@ class ReportController extends Controller
 
     public function teachersCsv()
     {
-        $rows = Teacher::with(['user', 'department'])->orderBy('employee_id')->get();
+        $rows = Teacher::with(['user', 'department'])->orderBy('employee_id')->orderBy('id')->lazy(500);
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
@@ -117,7 +117,7 @@ class ReportController extends Controller
 
     public function attendanceCsv()
     {
-        $rows = Attendance::with(['student.user', 'student.course', 'subject'])->orderByDesc('date')->get();
+        $rows = Attendance::with(['student.user', 'student.course', 'subject'])->orderByDesc('date')->orderBy('id')->lazy(500);
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
@@ -134,7 +134,7 @@ class ReportController extends Controller
 
     public function examsCsv()
     {
-        $rows = Exam::with(['course', 'semester', 'academicSession'])->orderByDesc('start_date')->get();
+        $rows = Exam::with(['course', 'semester', 'academicSession'])->orderByDesc('start_date')->orderBy('id')->lazy(500);
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
@@ -151,7 +151,7 @@ class ReportController extends Controller
 
     public function resultsCsv()
     {
-        $rows = Mark::with(['student.user', 'examSchedule.exam', 'examSchedule.subject'])->latest()->get();
+        $rows = Mark::with(['student.user', 'examSchedule.exam', 'examSchedule.subject'])->latest()->orderBy('id')->lazy(500);
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
