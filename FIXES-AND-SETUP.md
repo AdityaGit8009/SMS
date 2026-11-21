@@ -65,3 +65,7 @@ Use `MAIL_MAILER=log` in `.env`. Forgot-password reset links will be written to 
 ## Important note
 
 `php artisan migrate:fresh --seed` deletes all existing tables/data in the configured database. Use it only for first setup or disposable development data.
+
+## Student document storage
+
+New student documents are stored on the `local` disk under `storage/app/private/student-documents`. Administrators download them from the student's profile. Existing files on the public disk still work through this download route. Their old direct URLs stay accessible until those files are moved out of public storage.

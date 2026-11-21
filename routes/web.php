@@ -76,6 +76,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::resource('students', StudentController::class);
 
     Route::post('/students/{student}/documents', [StudentController::class, 'uploadDocument'])->name('students.documents.store');
+    Route::get('/students/{student}/documents/{document}', [StudentController::class, 'downloadDocument'])->name('students.documents.show');
     Route::delete('/students/{student}/documents/{document}', [StudentController::class, 'deleteDocument'])->name('students.documents.destroy');
     Route::get('/students/{student}/id-card', [StudentController::class, 'idCard'])->name('students.id-card');
 
