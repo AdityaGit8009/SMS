@@ -22,7 +22,7 @@
 
 **SMS (Student Management System)** is a web application built with **Laravel 13**, **Blade**, **Bootstrap 5**, **JavaScript**, **MySQL**, and **Eloquent ORM**. It is designed for academic institutions to organize administrative, teaching, and student-facing processes in one place.
 
-The repository documents functionality for **three user roles**: Administrator, Teacher, and Student. The modules below reflect the repository's documented scope; test each workflow in your own environment before production use.
+The application serves administrators, teachers and students through separate dashboards with shared sign-in and profile management.
 
 ## ✨ Features
 
@@ -41,13 +41,13 @@ The repository documents functionality for **three user roles**: Administrator, 
 
 ### Role-based experience
 
-| Role | Primary responsibilities |
-| --- | --- |
-| **Admin** | Manage academic master data, teachers, students, fees, exams, and institutional reports |
-| **Teacher** | Access teaching-related dashboard and relevant academic workflows |
-| **Student** | Access student dashboard and student-facing academic information |
+| Role | Dashboard | Workflows available through the panel |
+| --- | --- | --- |
+| **Admin** | `/admin/dashboard` | Academic setup, teacher and student records, attendance, fees and receipts, examinations, marks, timetables, notices, leave review, reports and settings |
+| **Teacher** | `/teacher/dashboard` | Attendance for assigned subjects, assignments and grading, personal timetable, course notices and leave requests |
+| **Student** | `/student/dashboard` | Personal attendance, fees, published results, assignments, timetable, notices, leave requests and ID card |
 
-> **Note:** Actual permissions depend on the application's routes, middleware, and user policies. Do not assume every role can access every module.
+All three roles can edit their profile, change their password and sign out. The home route selects a dashboard after sign-in. Route groups and role checks are defined in [routes/web.php](routes/web.php) and [RoleMiddleware.php](app/Http/Middleware/RoleMiddleware.php).
 
 ## 🛠️ Technology Stack
 
@@ -57,7 +57,7 @@ The repository documents functionality for **three user roles**: Administrator, 
 | Frontend | Blade templates, HTML, CSS, Bootstrap 5, JavaScript |
 | Data layer | MySQL with InnoDB, Eloquent ORM |
 | Tooling | Composer, Node.js/npm, Vite |
-| Testing | Pest / Laravel testing tools (declared in Composer) |
+| Testing | Pest feature tests for role navigation, attendance, exams, marks, fees, reports and student documents |
 
 The committed lockfile requires **PHP 8.4.1 or later**. Run `composer check-platform-reqs` after installation to verify the CLI version and extensions.
 
@@ -82,25 +82,16 @@ flowchart TD
 
 ## 📁 Project Structure
 
-```text
-SMS/
-├── app/                 # Application logic, controllers and models
-├── bootstrap/           # Laravel application bootstrap
-├── config/              # Framework and application configuration
-├── database/            # Migrations, seeders and factories
-├── public/              # Public entry point and assets
-├── resources/           # Blade templates and frontend source
-├── routes/              # Application route definitions
-├── storage/             # Logs and application-generated files
-├── tests/               # Automated tests
-├── .env.example         # Environment variable template
-├── .env.sms-example     # SMS-specific configuration example
-├── composer.json        # PHP dependencies
-├── package.json         # Frontend dependencies
-├── vite.config.js       # Asset bundling configuration
-├── FIXES-AND-SETUP.md   # Additional setup and compatibility notes
-└── artisan              # Laravel command-line entry point
-```
+| Location | What it contains |
+| --- | --- |
+| [routes/web.php](routes/web.php) | Sign-in, password and profile endpoints followed by the admin, teacher and student route groups |
+| [app/Http/Controllers](app/Http/Controllers) | Role-specific dashboards and operations, plus shared attendance, assignment, leave and timetable workflows |
+| [app/Models](app/Models) | Academic and financial records and their Eloquent relationships |
+| [database/migrations](database/migrations) and [database/seeders](database/seeders) | Schema, foreign keys and a local sample cohort with one account per role |
+| [resources/views](resources/views) | Blade page templates, print views and shared panel layouts |
+| [public/css](public/css) and [public/js](public/js) | The styles and interactions loaded by the dashboard and authentication pages |
+| [config/filesystems.php](config/filesystems.php) and [routes/console.php](routes/console.php) | Public and private file locations and the legacy student-document migration command |
+| [tests/Feature](tests/Feature) and [phpunit.xml](phpunit.xml) | Request and workflow tests, with an in-memory SQLite database by default |
 
 ## 🚀 Getting Started
 
@@ -173,8 +164,8 @@ This is intended for local testing. Configure an actual mail transport before de
 ## 🧪 Testing & Maintenance
 
 ```bash
-# Run the application test suite
-php artisan test
+# Run the suite against in-memory SQLite
+php artisan test --compact
 
 # Clear cached framework configuration
 php artisan optimize:clear
