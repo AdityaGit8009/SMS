@@ -43,3 +43,36 @@ it('keeps legacy documents available and removes their stored file on deletion',
     $this->assertModelMissing($document);
     Storage::disk('public')->assertMissing($document->file_path);
 });
+
+it('previews and repeats a verified legacy migration without losing the private file', function () {
+    Storage::fake('local');
+    Storage::fake('public');
+    $this->seed(SmsDemoSeeder::class);
+    $path = 'student-documents/legacy.txt';
+    Student::sole()->documents()->create(['type' => 'other', 'file_path' => $path]);
+    Storage::disk('public')->put($path, 'Development attachment');
+
+    $this->artisan('sms:privatize-documents --dry-run')->assertSuccessful();
+    Storage::disk('public')->assertExists($path);
+    Storage::disk('local')->assertMissing($path);
+    $this->artisan('sms:privatize-documents')->assertSuccessful();
+    $this->artisan('sms:privatize-documents')->assertSuccessful();
+
+    expect(Storage::disk('local')->get($path))->toBe('Development attachment');
+    Storage::disk('public')->assertMissing($path);
+});
+
+it('leaves conflicting copies intact for manual inspection', function () {
+    Storage::fake('local');
+    Storage::fake('public');
+    $this->seed(SmsDemoSeeder::class);
+    $path = 'student-documents/conflict.txt';
+    Student::sole()->documents()->create(['type' => 'other', 'file_path' => $path]);
+    Storage::disk('public')->put($path, 'Public version');
+    Storage::disk('local')->put($path, 'Private version');
+
+    $this->artisan('sms:privatize-documents')->assertFailed();
+
+    expect(Storage::disk('public')->get($path))->toBe('Public version');
+    expect(Storage::disk('local')->get($path))->toBe('Private version');
+});

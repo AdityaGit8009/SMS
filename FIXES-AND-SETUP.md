@@ -69,3 +69,5 @@ Use `MAIL_MAILER=log` in `.env`. Forgot-password reset links will be written to 
 ## Student document storage
 
 New student documents are stored on the `local` disk under `storage/app/private/student-documents`. Administrators download them from the student's profile. Existing files on the public disk still work through this download route. Their old direct URLs stay accessible until those files are moved out of public storage.
+
+Run `php artisan sms:privatize-documents --dry-run` to count legacy files. Run `php artisan sms:privatize-documents` to copy each registered document to the private disk and verify its SHA-256 checksum before removing the public copy. Repeating the command skips completed transfers. A nonzero exit status reports missing files or conflicts that require inspection.
