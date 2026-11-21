@@ -15,6 +15,7 @@ class ResultController extends Controller
         $student->load(['user', 'course', 'semester', 'academicSession']);
         $marks = Mark::with(['examSchedule.exam', 'examSchedule.subject'])
             ->where('student_id', $student->id)
+            ->whereHas('examSchedule.exam', fn ($query) => $query->whereIn('status', ['published', 'completed']))
             ->get()
             ->groupBy(fn ($mark) => $mark->examSchedule->exam_id);
 
