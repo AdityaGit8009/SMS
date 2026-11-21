@@ -5,7 +5,7 @@
 ### A Laravel-based academic administration and student information platform
 
 [![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)](https://laravel.com/)
-[![PHP](https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![PHP](https://img.shields.io/badge/PHP-8.4.1%2B-777BB4?logo=php&logoColor=white)](https://www.php.net/)
 [![MySQL](https://img.shields.io/badge/MySQL-InnoDB-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
 [![GitHub](https://img.shields.io/badge/Source-GitHub-181717?logo=github&logoColor=white)](https://github.com/AdityaGit8009/SMS)
@@ -59,7 +59,7 @@ The repository documents functionality for **three user roles**: Administrator, 
 | Tooling | Composer, Node.js/npm, Vite |
 | Testing | Pest / Laravel testing tools (declared in Composer) |
 
-`composer.json` declares **PHP ^8.3** and **Laravel ^13.17**. The repository's Windows setup notes recommend **PHP 8.4+**; PHP 8.4 is the safer choice when following those instructions.
+The committed lockfile requires **PHP 8.4.1 or later**. Run `composer check-platform-reqs` after installation to verify the CLI version and extensions.
 
 ## 🧭 Application Flow
 
@@ -104,117 +104,57 @@ SMS/
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Install the PHP dependencies
 
-- **PHP 8.4+ recommended** (Composer currently allows PHP 8.3+)
-- **Composer**
-- **Node.js and npm**
-- **MySQL** (WAMP/XAMPP or another local installation)
-- **Git**
-
-### 1. Clone the repository
+Use PHP 8.4.1 or later with Composer and the PDO driver for your chosen database. The committed lockfile installs Laravel 13, Pest 5 and Symfony packages that require PHP 8.4.1. On WAMP, check the version of the PHP executable on your terminal's PATH.
 
 ```bash
 git clone https://github.com/AdityaGit8009/SMS.git
 cd SMS
-```
-
-### 2. Install PHP and frontend dependencies
-
-```bash
 composer install
-npm install
+composer check-platform-reqs
 ```
 
-### 3. Configure the environment
-
-On Windows Command Prompt:
-
-```bat
-copy .env.example .env
-```
-
-On macOS/Linux/Git Bash:
-
-```bash
-cp .env.example .env
-```
-
-Generate your local application encryption key:
+Copy `.env.example` to `.env` using `Copy-Item .env.example .env` in PowerShell or `cp .env.example .env` on macOS and Linux. Generate the application's encryption key.
 
 ```bash
 php artisan key:generate
 ```
 
-Update the database settings in `.env`:
+To sign into the demo immediately after setup, choose a local password and set `SMS_DEMO_PASSWORD` in `.env` before the first seed.
+
+### Choose a database
+
+**SQLite** is the default in `.env.example`. Enable PDO SQLite and create the database file from the project root.
+
+```bash
+php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+```
+
+**MySQL** uses InnoDB foreign keys. Create an empty database, set the following values in `.env` and supply your own local credentials.
 
 ```dotenv
-APP_NAME="Student Management System"
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://127.0.0.1:8000
-
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=sms_db
-DB_USERNAME=root
+DB_USERNAME=your_local_user
 DB_PASSWORD=
-
-MAIL_MAILER=log
 ```
 
-Create the `sms_db` database in MySQL or phpMyAdmin before migrating. Change the username and password to match your local MySQL setup. **Never commit your `.env` file.**
+WAMP users can check the server default with `SHOW VARIABLES LIKE 'default_storage_engine';`. The application also requests InnoDB when creating its MySQL tables.
 
-### 4. Confirm the InnoDB storage engine
-
-The repository includes a warning that its original WAMP setup defaulted to MyISAM. For relational tables and foreign keys, use **InnoDB**.
-
-In MySQL:
-
-```sql
-SHOW VARIABLES LIKE 'default_storage_engine';
-```
-
-If necessary, set this in your MySQL `my.ini` (under the server section) and restart MySQL:
-
-```ini
-default-storage-engine=InnoDB
-```
-
-The existing project setup also advises reviewing the `mysql` connection in `config/database.php` for the following setting:
-
-```php
-'engine' => 'InnoDB',
-```
-
-### 5. Run database migrations and seeders
+### Migrate and start SMS
 
 ```bash
-php artisan optimize:clear
 php artisan migrate --seed
 php artisan storage:link
-```
-
-> ⚠️ **Data safety:** The repository's original setup mentions `php artisan migrate:fresh --seed`, but `migrate:fresh` **deletes existing database tables and their data**. Use it only for a disposable development database after confirming that deletion is acceptable.
-
-### 6. Start the application
-
-In one terminal:
-
-```bash
 php artisan serve
 ```
 
-In another terminal:
+Open the local URL printed by Artisan. The dashboard and sign-in layouts load their styles and JavaScript from `public/css/sms.css` and `public/js/sms.js`. Bootstrap, icons and fonts load from their configured CDNs. The storage link serves public assets such as profile photos.
 
-```bash
-npm run dev
-```
-
-Open **http://127.0.0.1:8000** in your browser.
-
-For a compiled frontend build, use `npm run build` instead of the Vite development server.
+For work on the Vite entry points in `resources/css/app.css` and `resources/js/app.js`, install the locked Node dependencies with `npm ci`. Use `npm run dev` while editing or `npm run build` for a production bundle.
 
 ## 👤 Demo Accounts
 
@@ -260,7 +200,7 @@ Before putting SMS online:
 
 - Set `APP_ENV=production` and `APP_DEBUG=false`.
 - Configure HTTPS, secure session cookies, and a trusted production email service.
-- Replace all publicly documented demo accounts and passwords.
+- Review any accounts created by earlier demo seeders and rotate their passwords before deploying an existing installation.
 - Keep `.env`, logs, private student documents, and credentials out of public access.
 - Review user roles, authorization policies, input validation, and file-upload restrictions.
 - Back up the database and uploaded documents securely.

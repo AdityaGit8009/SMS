@@ -22,7 +22,7 @@ This project is configured for Laravel 13, PHP 8.4, MySQL, Blade, Bootstrap, Jav
 
 ## First-time setup on Windows/WAMP
 
-1. Ensure PHP 8.4+, Composer, Node/npm and WAMP MySQL are available.
+1. Ensure the terminal uses PHP 8.4.1 or later, install dependencies with `composer install`, and run `composer check-platform-reqs`.
 2. In WAMP MySQL `my.ini`, use:
 
    `default-storage-engine=InnoDB`
@@ -46,7 +46,7 @@ This project is configured for Laravel 13, PHP 8.4, MySQL, Blade, Bootstrap, Jav
 
    `php artisan optimize:clear`
 
-   `php artisan migrate:fresh --seed`
+   `php artisan migrate --seed`
 
    `php artisan storage:link`
 
