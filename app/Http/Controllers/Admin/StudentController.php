@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicSession;
+use App\Models\AssignmentSubmission;
 use App\Models\Course;
 use App\Models\Section;
 use App\Models\Semester;
@@ -87,11 +88,22 @@ class StudentController extends Controller
     public function destroy(Student $student)
     {
         DB::transaction(function () use ($student) {
-            if ($student->photo) {
-                Storage::disk('public')->delete($student->photo);
-            } foreach ($student->documents as $doc) {
-                $doc->deleteStoredCopies();
-            } $student->user->delete();
+            $user = $student->user;
+            $documents = $student->documents()->get();
+            $publicFiles = $user->leaveRequests()->whereNotNull('attachment')->pluck('attachment')
+                ->merge(AssignmentSubmission::where('student_id', $student->id)->pluck('file_path'))
+                ->push($student->photo, $user->profile_photo)->filter()->values()->all();
+
+            if (! $user->delete()) {
+                throw ValidationException::withMessages(['delete' => 'The student account could not be deleted.']);
+            }
+
+            DB::afterCommit(function () use ($publicFiles, $documents) {
+                Storage::disk('public')->delete($publicFiles);
+                foreach ($documents as $document) {
+                    $document->deleteStoredCopies();
+                }
+            });
         });
 
         return back()->with('success', 'Student deleted.');
@@ -111,7 +123,7 @@ class StudentController extends Controller
             throw $exception;
         }
 
-return back()->with('success', 'Document uploaded.');
+        return back()->with('success', 'Document uploaded.');
     }
 
     public function downloadDocument(Student $student, StudentDocument $document): StreamedResponse

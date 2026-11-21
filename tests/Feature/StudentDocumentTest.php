@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\LeaveRequest;
 use App\Models\Student;
 use App\Models\User;
 use Database\Seeders\SmsDemoSeeder;
@@ -75,4 +76,38 @@ it('leaves conflicting copies intact for manual inspection', function () {
 
     expect(Storage::disk('public')->get($path))->toBe('Public version');
     expect(Storage::disk('local')->get($path))->toBe('Private version');
+});
+
+it('retains a private document when account deletion is declined', function () {
+    Storage::fake('local');
+    Storage::fake('public');
+    $this->seed(SmsDemoSeeder::class);
+    $student = Student::sole();
+    $document = $student->documents()->create(['type' => 'other', 'file_path' => 'student-documents/retained.txt']);
+    Storage::disk('local')->put($document->file_path, 'Sample');
+    User::deleting(fn () => false);
+
+    $this->actingAs(User::where('role', 'admin')->sole())->delete(route('admin.students.destroy', $student))
+        ->assertSessionHasErrors('delete');
+
+    $this->assertModelExists($document);
+    Storage::disk('local')->assertExists($document->file_path);
+});
+
+it('cleans up linked files after a successful account deletion', function () {
+    Storage::fake('local');
+    Storage::fake('public');
+    $this->seed(SmsDemoSeeder::class);
+    $student = Student::sole();
+    $document = $student->documents()->create(['type' => 'other', 'file_path' => 'student-documents/removed.txt']);
+    Storage::disk('local')->put($document->file_path, 'Sample');
+    $leave = LeaveRequest::create(['user_id' => $student->user_id, 'from_date' => '2026-11-01', 'to_date' => '2026-11-02', 'reason' => 'Sample', 'attachment' => 'leave-attachments/sample.txt']);
+    Storage::disk('public')->put($leave->attachment, 'Sample');
+
+    $this->actingAs(User::where('role', 'admin')->sole())->delete(route('admin.students.destroy', $student))
+        ->assertSessionHasNoErrors();
+
+    $this->assertModelMissing($student);
+    Storage::disk('local')->assertMissing($document->file_path);
+    Storage::disk('public')->assertMissing($leave->attachment);
 });
