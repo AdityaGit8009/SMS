@@ -13,7 +13,7 @@ class NoticeController extends Controller
         $student = $request->user()->student;
         abort_unless($student, 404);
         $items = Notice::with(['creator', 'course'])
-            ->where('status', true)
+            ->published()
             ->where(function ($q) {
                 $q->whereNull('target_role')->orWhere('target_role', 'student');
             })
@@ -21,6 +21,7 @@ class NoticeController extends Controller
                 $q->whereNull('course_id')->orWhere('course_id', $student->course_id);
             })
             ->latest('publish_date')->paginate(20);
+
         return view('student.notices', compact('items'));
     }
 }
