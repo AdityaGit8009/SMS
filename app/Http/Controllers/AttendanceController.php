@@ -18,7 +18,8 @@ class AttendanceController extends Controller
         $subjectQuery = Subject::with(['course', 'semester', 'teacher.user']);
 
         if ($user->role === 'teacher') {
-            $subjectQuery->where('teacher_id', $user->teacher?->id ?? 0);
+            abort_unless($user->teacher, 404, 'Teacher profile not found.');
+            $subjectQuery->where('teacher_id', $user->teacher->id);
         }
 
         $subjects = $subjectQuery->orderBy('name')->get();
@@ -31,7 +32,7 @@ class AttendanceController extends Controller
             $selectedSubject = Subject::with(['course', 'semester'])->findOrFail($request->subject_id);
 
             if ($user->role === 'teacher') {
-                abort_unless($selectedSubject->teacher_id === $user->teacher?->id, 403);
+                abort_unless($selectedSubject->teacher_id === $user->teacher->id, 403);
             }
 
             $students = Student::with('user')
@@ -64,7 +65,9 @@ class AttendanceController extends Controller
         $subject = Subject::findOrFail($data['subject_id']);
 
         if ($request->user()->role === 'teacher') {
-            abort_unless($subject->teacher_id === $request->user()->teacher?->id, 403);
+            $teacher = $request->user()->teacher;
+            abort_unless($teacher, 404, 'Teacher profile not found.');
+            abort_unless($subject->teacher_id === $teacher->id, 403);
         }
 
         $studentIds = array_keys($data['attendance']);

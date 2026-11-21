@@ -60,3 +60,17 @@ it('summarizes attendance across every history page and subject', function () {
         ->assertViewHas('percentage', 93.8)
         ->assertViewHas('subjectSummary', fn ($summary) => $summary->pluck('present', 'subject.code')->all() === ['CS101' => 30, 'CS102' => 0]);
 });
+
+it('requires a linked teaching profile when viewing or submitting a subject register', function () {
+    $this->seed(SmsDemoSeeder::class);
+    $account = User::factory()->create(['role' => 'teacher', 'status' => true]);
+    $subject = Subject::where('code', 'CS101')->firstOrFail();
+    $subject->update(['teacher_id' => null]);
+
+    $this->actingAs($account)->get(route('teacher.attendance.index', ['subject_id' => $subject->id]))->assertNotFound();
+    $this->post(route('teacher.attendance.store'), [
+        'subject_id' => $subject->id, 'date' => '2026-11-10', 'attendance' => [Student::sole()->id => 'present'],
+    ])->assertNotFound();
+
+    $this->assertDatabaseEmpty('attendances');
+});
