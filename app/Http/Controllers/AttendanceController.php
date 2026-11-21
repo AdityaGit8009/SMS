@@ -98,23 +98,24 @@ class AttendanceController extends Controller
         $records = Attendance::with('subject')
             ->where('student_id', $student->id)
             ->latest('date')
+            ->orderByDesc('id')
             ->paginate(30);
 
-        $all = Attendance::with('subject')->where('student_id', $student->id)->get();
-        $total = $all->count();
-        $present = $all->where('status', 'present')->count();
-        $percentage = $total ? round(($present / $total) * 100, 1) : 0;
-        $subjectSummary = $all->groupBy('subject_id')->map(function ($rows) {
-            $total = $rows->count();
-            $present = $rows->where('status', 'present')->count();
+        $counts = Attendance::with('subject')
+            ->where('student_id', $student->id)
+            ->select('subject_id')
+            ->selectRaw('count(*) as total, sum(case when status = ? then 1 else 0 end) as present', ['present'])
+            ->groupBy('subject_id')
+            ->get();
 
-            return [
-                'subject' => $rows->first()->subject,
-                'total' => $total,
-                'present' => $present,
-                'percentage' => $total ? round(($present / $total) * 100, 1) : 0,
-            ];
-        });
+        $total = $counts->sum('total');
+        $percentage = $total ? round($counts->sum('present') / $total * 100, 1) : 0;
+        $subjectSummary = $counts->map(fn (Attendance $count) => [
+            'subject' => $count->subject,
+            'total' => (int) $count->total,
+            'present' => (int) $count->present,
+            'percentage' => round($count->present / $count->total * 100, 1),
+        ]);
 
         return view('student.attendance', compact('student', 'records', 'percentage', 'subjectSummary'));
     }

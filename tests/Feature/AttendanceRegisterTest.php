@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Attendance;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
@@ -43,4 +44,19 @@ it('returns invalid register filters to the attendance form', function () {
         ->get(route('admin.attendance.index', ['subject_id' => 'unknown', 'date' => 'not-a-date']))
         ->assertRedirectToRoute('admin.attendance.index')
         ->assertSessionHasErrors(['subject_id', 'date']);
+});
+
+it('summarizes attendance across every history page and subject', function () {
+    $this->seed(SmsDemoSeeder::class);
+    $student = Student::sole();
+    $subjects = Subject::orderBy('code')->get();
+    foreach (range(1, 31) as $day) {
+        Attendance::create(['student_id' => $student->id, 'subject_id' => $subjects[0]->id, 'date' => sprintf('2026-10-%02d', $day), 'status' => $day === 1 ? 'absent' : 'present']);
+    }
+    Attendance::create(['student_id' => $student->id, 'subject_id' => $subjects[1]->id, 'date' => '2026-10-01', 'status' => 'leave']);
+
+    $this->actingAs($student->user)->get(route('student.attendance', ['page' => 2]))
+        ->assertViewHas('records', fn ($records) => $records->count() === 2)
+        ->assertViewHas('percentage', 93.8)
+        ->assertViewHas('subjectSummary', fn ($summary) => $summary->pluck('present', 'subject.code')->all() === ['CS101' => 30, 'CS102' => 0]);
 });
