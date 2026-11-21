@@ -7,6 +7,7 @@ use App\Models\ExamSchedule;
 use App\Models\Mark;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class MarkController extends Controller
 {
@@ -38,44 +39,45 @@ class MarkController extends Controller
         $data = $request->validate([
             'schedule_id' => ['required', 'exists:exam_schedules,id'],
             'marks' => ['required', 'array'],
-            'marks.*.theory' => ['nullable', 'numeric', 'min:0'],
-            'marks.*.practical' => ['nullable', 'numeric', 'min:0'],
+            'marks.*' => ['array:theory,practical'],
+            'marks.*.theory' => ['nullable', 'numeric', 'decimal:0,2', 'min:0'],
+            'marks.*.practical' => ['nullable', 'numeric', 'decimal:0,2', 'min:0'],
         ]);
 
         $schedule = ExamSchedule::with('exam')->findOrFail($data['schedule_id']);
 
+        $students = Student::whereKey(array_keys($data['marks']))
+            ->where('course_id', $schedule->exam->course_id)
+            ->where('semester_id', $schedule->exam->semester_id)
+            ->where('academic_session_id', $schedule->exam->academic_session_id)
+            ->where('status', true)
+            ->pluck('roll_no', 'id');
+        $rows = [];
         foreach ($data['marks'] as $studentId => $row) {
-            $student = Student::whereKey($studentId)
-                ->where('course_id', $schedule->exam->course_id)
-                ->where('semester_id', $schedule->exam->semester_id)
-                ->where('academic_session_id', $schedule->exam->academic_session_id)
-                ->where('status', true)
-                ->first();
-
-            if (! $student) {
-                continue;
+            if (! $students->has($studentId)) {
+                throw ValidationException::withMessages(['marks' => 'The class roster has changed. Reload the students before saving marks.']);
             }
 
             $theory = (float) ($row['theory'] ?? 0);
             $practical = (float) ($row['practical'] ?? 0);
-            $total = $theory + $practical;
-
+            $total = round($theory + $practical, 2);
             if ($total > (float) $schedule->max_marks) {
-                return back()->withErrors([
-                    'marks' => "Marks for {$student->roll_no} exceed maximum marks ({$schedule->max_marks}).",
-                ])->withInput();
+                throw ValidationException::withMessages([
+                    'marks' => "Marks for {$students[$studentId]} exceed maximum marks ({$schedule->max_marks}).",
+                ]);
             }
 
-            Mark::updateOrCreate(
-                ['exam_schedule_id' => $schedule->id, 'student_id' => $student->id],
-                [
-                    'theory_marks' => $theory,
-                    'practical_marks' => $practical,
-                    'total_marks' => $total,
-                    'entered_by' => $request->user()->id,
-                ]
-            );
+            $rows[] = [
+                'exam_schedule_id' => $schedule->id,
+                'student_id' => $studentId,
+                'theory_marks' => $theory,
+                'practical_marks' => $practical,
+                'total_marks' => $total,
+                'entered_by' => $request->user()->id,
+            ];
         }
+
+        Mark::upsert($rows, ['exam_schedule_id', 'student_id'], ['theory_marks', 'practical_marks', 'total_marks', 'entered_by']);
 
         return back()->with('success', 'Marks saved successfully.');
     }
